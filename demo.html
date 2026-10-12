@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>three-perf-hud demo</title>
+<style>html,body{margin:0;height:100%;background:#0b0d12;overflow:hidden}</style>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { PerfHUD } from './three-perf-hud.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0d12);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 0, 14);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.2));
+const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(3, 5, 4); scene.add(dir);
+
+// a few hundred spinning cubes so the counters are non-trivial
+const geo = new THREE.BoxGeometry();
+const cubes = [];
+for (let i = 0; i < 400; i++) {
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(i / 400, 0.6, 0.55) }));
+  m.position.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 8);
+  m.rotation.set(Math.random() * 6, Math.random() * 6, 0);
+  scene.add(m); cubes.push(m);
+}
+
+const hud = new PerfHUD(renderer, { corner: 'top-left', target: 16.7 });
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function frame() {
+  for (const c of cubes) { c.rotation.x += 0.01; c.rotation.y += 0.013; }
+  renderer.render(scene, camera);
+  hud.update();                 // <-- the one line you add
+  requestAnimationFrame(frame);
+}
+frame();
+
+// expose for quick inspection
+window.__hud = hud;
+</script>
+</body>
+</html>
